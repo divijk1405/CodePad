@@ -4,7 +4,10 @@ import com.codepad.dto.CodeChange;
 import com.codepad.dto.LanguageChange;
 import com.codepad.dto.UserPresence;
 import com.codepad.service.RoomService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
+import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -15,6 +18,8 @@ import java.util.Map;
 
 @Controller
 public class RoomWebSocketController {
+
+    private static final Logger log = LoggerFactory.getLogger(RoomWebSocketController.class);
 
     private final RoomService roomService;
     private final SimpMessagingTemplate messagingTemplate;
@@ -30,6 +35,7 @@ public class RoomWebSocketController {
         change.setRoomId(roomId);
         change.setTimestamp(System.currentTimeMillis());
         roomService.updateCode(roomId, change.getContent());
+        log.debug("Code updated in room {} by user {}", roomId, change.getUserId());
         return change;
     }
 
@@ -38,6 +44,7 @@ public class RoomWebSocketController {
     public LanguageChange handleLanguageChange(@DestinationVariable String roomId, LanguageChange change) {
         change.setRoomId(roomId);
         roomService.updateLanguage(roomId, change.getLanguage());
+        log.info("Language changed to '{}' in room {} by user {}", change.getLanguage(), roomId, change.getUserId());
         return change;
     }
 
@@ -54,6 +61,7 @@ public class RoomWebSocketController {
 
         messagingTemplate.convertAndSend("/topic/room/" + roomId + "/presence", presence);
         messagingTemplate.convertAndSend("/topic/room/" + roomId + "/state", state);
+        log.info("User '{}' ({}) joined room {}", presence.getUsername(), presence.getUserId(), roomId);
     }
 
     @MessageMapping("/room/{roomId}/leave")
@@ -62,5 +70,11 @@ public class RoomWebSocketController {
         presence.setAction("leave");
         roomService.removeUser(roomId, presence.getUserId());
         messagingTemplate.convertAndSend("/topic/room/" + roomId + "/presence", presence);
+        log.info("User '{}' ({}) left room {}", presence.getUsername(), presence.getUserId(), roomId);
+    }
+
+    @MessageExceptionHandler
+    public void handleException(Exception ex) {
+        log.error("WebSocket message handling error: {}", ex.getMessage(), ex);
     }
 }
