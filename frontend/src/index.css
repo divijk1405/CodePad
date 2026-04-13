@@ -709,3 +709,106 @@ select:focus {
   from { opacity: 1; transform: translateX(-50%) translateY(0); }
   to { opacity: 0; transform: translateX(-50%) translateY(12px); }
 }
+
+/* ===== Responsive / Mobile ===== */
+@media (max-width: 768px) {
+  .landing h1 {
+    font-size: 32px;
+  }
+
+  .landing-subtitle {
+    font-size: 14px;
+  }
+
+  .landing-card {
+    width: calc(100% - 32px);
+    max-width: 380px;
+    padding: 24px 20px;
+  }
+
+  .toolbar {
+    flex-direction: column;
+    height: auto;
+    padding: 8px 12px;
+    gap: 8px;
+  }
+
+  .toolbar-left {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .toolbar-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .toolbar-brand span {
+    display: none;
+  }
+
+  .connection-status span {
+    display: none;
+  }
+
+  .user-count {
+    display: none;
+  }
+
+  select {
+    max-width: 120px;
+    font-size: 12px;
+  }
+
+  .username-modal-content {
+    min-width: unset;
+    width: calc(100% - 32px);
+    max-width: 360px;
+    padding: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .landing-logo-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+  }
+
+  .landing h1 {
+    font-size: 26px;
+  }
+
+  .landing-card {
+    padding: 20px 16px;
+  }
+
+  .btn {
+    padding: 10px 18px;
+    font-size: 14px;
+  }
+
+  .join-form {
+    flex-direction: column;
+  }
+
+  .join-form input {
+    width: 100%;
+  }
+
+  .room-id {
+    font-size: 11px;
+    padding: 3px 8px;
+  }
+
+  .btn-leave {
+    font-size: 11px;
+    padding: 4px 10px;
+  }
+
+  .btn-run {
+    font-size: 12px;
+    padding: 5px 12px;
+  }
+}
