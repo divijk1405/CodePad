@@ -1,19 +1,21 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { RunResponse } from '../types';
 
 interface OutputPanelProps {
   language: string;
   code: string;
+  runTrigger: number;
 }
 
-export default function OutputPanel({ language, code }: OutputPanelProps) {
+export default function OutputPanel({ language, code, runTrigger }: OutputPanelProps) {
   const [output, setOutput] = useState<RunResponse | null>(null);
   const [running, setRunning] = useState(false);
   const [visible, setVisible] = useState(false);
 
   const canRun = language === 'python' || language === 'javascript';
 
-  const handleRun = async () => {
+  const handleRun = useCallback(async () => {
+    if (!canRun || running) return;
     setRunning(true);
     setVisible(true);
     setOutput(null);
@@ -31,7 +33,14 @@ export default function OutputPanel({ language, code }: OutputPanelProps) {
     } finally {
       setRunning(false);
     }
-  };
+  }, [canRun, running, code, language]);
+
+  // Trigger run from parent via Ctrl+Enter
+  useEffect(() => {
+    if (runTrigger > 0) {
+      handleRun();
+    }
+  }, [runTrigger]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const getStatusLabel = () => {
     if (!output) return null;
@@ -44,7 +53,7 @@ export default function OutputPanel({ language, code }: OutputPanelProps) {
     <>
       <div style={{ display: 'flex', alignItems: 'center' }}>
         {canRun && (
-          <button className="btn-run" onClick={handleRun} disabled={running}>
+          <button className="btn-run" onClick={handleRun} disabled={running} title="Run code (Ctrl+Enter)">
             {running ? (
               <>
                 <span className="spinner" />

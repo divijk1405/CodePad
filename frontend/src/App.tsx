@@ -1,6 +1,7 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import CodeEditor from './components/CodeEditor';
 import OutputPanel from './components/OutputPanel';
+import Toast from './components/Toast';
 import { useWebSocket } from './hooks/useWebSocket';
 import { LANGUAGES } from './types';
 import type { LanguageId, CodeChange, LanguageChange, UserPresence, RoomState } from './types';
@@ -53,6 +54,9 @@ function EditorPage({ roomId, userId, username }: { roomId: string; userId: stri
   const [code, setCode] = useState('');
   const [language, setLanguage] = useState<LanguageId>('javascript');
   const [users, setUsers] = useState<Record<string, string>>({});
+  const [toastMsg, setToastMsg] = useState('');
+  const [toastVisible, setToastVisible] = useState(false);
+  const [runTrigger, setRunTrigger] = useState(0);
   const codeRef = useRef(code);
 
   const onCodeChange = useCallback((change: CodeChange) => {
@@ -110,14 +114,33 @@ function EditorPage({ roomId, userId, username }: { roomId: string; userId: stri
     [sendLanguageChange]
   );
 
+  const showToast = useCallback((msg: string) => {
+    setToastMsg(msg);
+    setToastVisible(true);
+  }, []);
+
   const copyRoomId = () => {
     navigator.clipboard.writeText(roomId);
+    showToast('Room code copied!');
   };
+
+  // Ctrl+Enter to run code
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        setRunTrigger((t) => t + 1);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const userEntries = Object.entries(users);
 
   return (
     <div className="editor-page">
+      <Toast message={toastMsg} visible={toastVisible} onHide={() => setToastVisible(false)} />
       <div className="toolbar">
         <div className="toolbar-left">
           <div className="toolbar-brand">
@@ -159,7 +182,7 @@ function EditorPage({ roomId, userId, username }: { roomId: string; userId: stri
             ))}
             <span className="user-count">{userEntries.length} online</span>
           </div>
-          <OutputPanel language={language} code={codeRef.current} />
+          <OutputPanel language={language} code={codeRef.current} runTrigger={runTrigger} />
         </div>
       </div>
       <div className="editor-container">
