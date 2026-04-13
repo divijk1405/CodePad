@@ -33,24 +33,46 @@ export default function OutputPanel({ language, code }: OutputPanelProps) {
     }
   };
 
+  const getStatusLabel = () => {
+    if (!output) return null;
+    if (output.timedOut) return <span className="output-status output-status-error">Timed Out</span>;
+    if (output.exitCode !== 0) return <span className="output-status output-status-error">Exit {output.exitCode}</span>;
+    return <span className="output-status output-status-success">Success</span>;
+  };
+
   return (
     <>
-      <div style={{ padding: '0 16px 0 0', display: 'flex', alignItems: 'center' }}>
+      <div style={{ display: 'flex', alignItems: 'center' }}>
         {canRun && (
           <button className="btn-run" onClick={handleRun} disabled={running}>
-            {running ? 'Running...' : 'Run'}
+            {running ? (
+              <>
+                <span className="spinner" />
+                Running...
+              </>
+            ) : (
+              <>
+                <span className="run-icon">&#9654;</span>
+                Run
+              </>
+            )}
           </button>
         )}
       </div>
       {visible && (
         <div className="output-panel">
           <div className="output-header">
-            <span>Output</span>
-            <button className="btn-close" onClick={() => setVisible(false)}>x</button>
+            <div className="output-header-left">
+              <span>Output</span>
+              {getStatusLabel()}
+            </div>
+            <button className="btn-close" onClick={() => setVisible(false)}>&times;</button>
           </div>
-          <div className={`output-body ${output && output.exitCode !== 0 ? 'error' : 'success'}`}>
-            {running && 'Running...'}
-            {output && (output.stdout || output.stderr || (output.timedOut ? 'Execution timed out' : 'No output'))}
+          <div className={`output-body ${output ? (output.exitCode !== 0 ? 'error' : 'success') : ''}`}>
+            {running && <span className="output-running">Running your code...</span>}
+            {output && (
+              output.stdout || output.stderr || (output.timedOut ? 'Execution timed out' : 'No output')
+            )}
           </div>
         </div>
       )}
