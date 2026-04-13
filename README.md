@@ -13,6 +13,10 @@ A real-time collaborative code editor where multiple users can write code togeth
 - **Synced language selector** — Changing the language updates it for everyone in the room
 - **Code execution** — Run Python and JavaScript code in sandboxed Docker containers with 5s timeout and 256MB memory limit
 - **Auto-expiry** — Rooms expire after 24 hours of inactivity via Redis TTL
+- **Rate limiting** — Code execution limited to 10 requests per minute per IP
+- **Health monitoring** — `/api/health` endpoint checks Postgres and Redis connectivity
+- **Keyboard shortcuts** — Ctrl/Cmd+Enter to run code, click room code to copy
+- **Responsive design** — Works on desktop, tablet, and mobile screens
 - **No authentication** — Just create a room, share the code, and start collaborating
 
 ## Architecture
@@ -29,10 +33,13 @@ CodePad/
 │           ├── CodePadApplication.java         # Entry point
 │           ├── config/
 │           │   ├── WebSocketConfig.java        # STOMP over SockJS at /ws
+│           │   ├── WebSocketEventListener.java # Connection/disconnect logging
 │           │   ├── RedisConfig.java            # RedisTemplate with JSON serializer
-│           │   └── CorsConfig.java             # CORS allow all origins
+│           │   ├── CorsConfig.java             # Configurable CORS origins
+│           │   └── RateLimitFilter.java        # Per-IP rate limiting for /api/run
 │           ├── controller/
-│           │   ├── RoomController.java         # REST endpoints
+│           │   ├── RoomController.java         # REST endpoints with validation
+│           │   ├── HealthController.java       # Health check endpoint
 │           │   └── RoomWebSocketController.java # STOMP message handlers
 │           ├── dto/
 │           │   ├── CodeChange.java             # Code edit payload
@@ -43,8 +50,12 @@ CodePad/
 │           ├── model/
 │           │   ├── Room.java                   # JPA entity (rooms table)
 │           │   └── RoomRepository.java         # Spring Data JPA interface
+│           ├── exception/
+│           │   ├── GlobalExceptionHandler.java # Centralized error handling
+│           │   └── RoomNotFoundException.java  # Custom 404 exception
 │           └── service/
 │               ├── RoomService.java            # Room state management (Redis + Postgres)
+│               ├── RoomCleanupService.java     # Scheduled expired room cleanup
 │               └── CodeExecutionService.java   # Docker sandbox execution
 │
 ├── frontend/                                   # React + TypeScript SPA
@@ -64,7 +75,8 @@ CodePad/
 │       │   └── useWebSocket.ts                 # STOMP WebSocket client hook
 │       └── components/
 │           ├── CodeEditor.tsx                  # CodeMirror 6 editor component
-│           └── OutputPanel.tsx                 # Code execution output display
+│           ├── OutputPanel.tsx                 # Code execution output display
+│           └── Toast.tsx                       # Toast notification component
 │
 ├── docker-compose.yml                          # Full stack: Postgres, Redis, backend, frontend
 ├── test-websocket.js                           # Load test script (8 concurrent clients)
@@ -106,7 +118,8 @@ CodePad/
 |--------|----------|-------------|
 | `POST` | `/api/rooms` | Create a new room. Returns `{id, language, code, createdAt}` |
 | `GET` | `/api/rooms/:id` | Get room state. Returns `{id, code, language, users, createdAt}` |
-| `POST` | `/api/run` | Execute code. Body: `{code, language}`. Returns `{stdout, stderr, exitCode, timedOut}` |
+| `POST` | `/api/run` | Execute code. Body: `{code, language}`. Returns `{stdout, stderr, exitCode, timedOut}`. Rate limited: 10/min per IP |
+| `GET` | `/api/health` | Health check. Returns `{status, timestamp, postgres, redis}` |
 
 ### WebSocket (STOMP)
 
@@ -214,6 +227,7 @@ All backend config is in `backend/src/main/resources/application.yml`:
 | `codepad.room.ttl-hours` | 24 | Room auto-expiry time |
 | `codepad.execution.timeout-seconds` | 5 | Code execution timeout |
 | `codepad.execution.memory-limit-mb` | 256 | Docker container memory limit |
+| `codepad.cors.allowed-origins` | `http://localhost:3000,http://localhost:5173` | Allowed CORS origins |
 
 ## Code Execution Sandbox
 
