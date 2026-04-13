@@ -12,8 +12,22 @@ function generateUserId() {
   return 'user-' + Math.random().toString(36).substring(2, 10);
 }
 
-function Landing({ onCreateRoom, onJoinRoom }: { onCreateRoom: () => void; onJoinRoom: (id: string) => void }) {
+function Landing({ onCreateRoom, onJoinRoom }: { onCreateRoom: () => Promise<void>; onJoinRoom: (id: string) => void }) {
   const [joinId, setJoinId] = useState('');
+  const [creating, setCreating] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleCreate = async () => {
+    setCreating(true);
+    setError('');
+    try {
+      await onCreateRoom();
+    } catch {
+      setError('Failed to create room. Is the server running?');
+    } finally {
+      setCreating(false);
+    }
+  };
 
   return (
     <div className="landing">
@@ -23,8 +37,9 @@ function Landing({ onCreateRoom, onJoinRoom }: { onCreateRoom: () => void; onJoi
       </div>
       <p className="landing-subtitle">Real-time collaborative code editor</p>
       <div className="landing-card">
-        <button className="btn btn-primary" onClick={onCreateRoom}>
-          Create New Room
+        {error && <div className="landing-error">{error}</div>}
+        <button className="btn btn-primary" onClick={handleCreate} disabled={creating}>
+          {creating ? 'Creating...' : 'Create New Room'}
         </button>
         <div className="landing-divider">
           <span>or join existing</span>
@@ -50,7 +65,7 @@ function Landing({ onCreateRoom, onJoinRoom }: { onCreateRoom: () => void; onJoi
   );
 }
 
-function EditorPage({ roomId, userId, username }: { roomId: string; userId: string; username: string }) {
+function EditorPage({ roomId, userId, username, onLeave }: { roomId: string; userId: string; username: string; onLeave: () => void }) {
   const [code, setCode] = useState('');
   const [language, setLanguage] = useState<LanguageId>('javascript');
   const [users, setUsers] = useState<Record<string, string>>({});
@@ -183,6 +198,9 @@ function EditorPage({ roomId, userId, username }: { roomId: string; userId: stri
             <span className="user-count">{userEntries.length} online</span>
           </div>
           <OutputPanel language={language} code={codeRef.current} runTrigger={runTrigger} />
+          <button className="btn-leave" onClick={onLeave} title="Leave room">
+            Leave
+          </button>
         </div>
       </div>
       <div className="editor-container">
@@ -213,12 +231,18 @@ export default function App() {
 
   const handleCreate = async () => {
     const res = await fetch('/api/rooms', { method: 'POST' });
+    if (!res.ok) throw new Error('Failed to create room');
     const data = await res.json();
     promptName(data.id);
   };
 
   const handleJoin = (id: string) => {
     promptName(id);
+  };
+
+  const handleLeave = () => {
+    setRoomId(null);
+    setUsername('');
   };
 
   if (showNameModal) {
@@ -253,7 +277,7 @@ export default function App() {
 
   return (
     <div className="app">
-      <EditorPage roomId={roomId} userId={userId} username={username} />
+      <EditorPage roomId={roomId} userId={userId} username={username} onLeave={handleLeave} />
     </div>
   );
 }
