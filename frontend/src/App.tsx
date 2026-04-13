@@ -5,7 +5,7 @@ import { useWebSocket } from './hooks/useWebSocket';
 import { LANGUAGES } from './types';
 import type { LanguageId, CodeChange, LanguageChange, UserPresence, RoomState } from './types';
 
-const USER_COLORS = ['#cba6f7', '#f38ba8', '#a6e3a1', '#89b4fa', '#fab387', '#f9e2af', '#94e2d5', '#74c7ec'];
+const USER_COLORS = ['#6c5ce7', '#e84393', '#00b894', '#0984e3', '#fdcb6e', '#e17055', '#00cec9', '#a29bfe'];
 
 function generateUserId() {
   return 'user-' + Math.random().toString(36).substring(2, 10);
@@ -16,28 +16,34 @@ function Landing({ onCreateRoom, onJoinRoom }: { onCreateRoom: () => void; onJoi
 
   return (
     <div className="landing">
-      <h1>CodePad</h1>
-      <p>Real-time collaborative code editor</p>
-      <div className="landing-actions">
-        <button className="btn btn-primary" onClick={onCreateRoom}>
-          Create Room
-        </button>
+      <div className="landing-logo">
+        <div className="landing-logo-icon">&lt;/&gt;</div>
+        <h1>CodePad</h1>
       </div>
-      <div className="join-form">
-        <input
-          placeholder="Room code"
-          value={joinId}
-          onChange={(e) => setJoinId(e.target.value.toUpperCase())}
-          maxLength={6}
-          onKeyDown={(e) => e.key === 'Enter' && joinId.length === 6 && onJoinRoom(joinId)}
-        />
-        <button
-          className="btn btn-secondary"
-          onClick={() => onJoinRoom(joinId)}
-          disabled={joinId.length !== 6}
-        >
-          Join
+      <p className="landing-subtitle">Real-time collaborative code editor</p>
+      <div className="landing-card">
+        <button className="btn btn-primary" onClick={onCreateRoom}>
+          Create New Room
         </button>
+        <div className="landing-divider">
+          <span>or join existing</span>
+        </div>
+        <div className="join-form">
+          <input
+            placeholder="Room code"
+            value={joinId}
+            onChange={(e) => setJoinId(e.target.value.toUpperCase())}
+            maxLength={6}
+            onKeyDown={(e) => e.key === 'Enter' && joinId.length === 6 && onJoinRoom(joinId)}
+          />
+          <button
+            className="btn btn-secondary"
+            onClick={() => onJoinRoom(joinId)}
+            disabled={joinId.length !== 6}
+          >
+            Join
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -114,8 +120,12 @@ function EditorPage({ roomId, userId, username }: { roomId: string; userId: stri
     <div className="editor-page">
       <div className="toolbar">
         <div className="toolbar-left">
-          <span style={{ fontWeight: 700, color: '#cba6f7' }}>CodePad</span>
-          <span className="room-id" onClick={copyRoomId} title="Click to copy">
+          <div className="toolbar-brand">
+            <div className="toolbar-brand-icon">&lt;/&gt;</div>
+            <span>CodePad</span>
+          </div>
+          <div className="toolbar-sep" />
+          <span className="room-id" onClick={copyRoomId} title="Click to copy room code">
             {roomId}
           </span>
           <select
@@ -128,9 +138,12 @@ function EditorPage({ roomId, userId, username }: { roomId: string; userId: stri
               </option>
             ))}
           </select>
-          <span style={{ fontSize: 12, color: connected ? '#a6e3a1' : '#f38ba8' }}>
-            {connected ? 'Connected' : 'Reconnecting...'}
-          </span>
+          <div className="connection-status">
+            <div className={`connection-dot ${connected ? 'connected' : 'disconnected'}`} />
+            <span style={{ color: connected ? 'var(--green)' : 'var(--red)' }}>
+              {connected ? 'Connected' : 'Reconnecting...'}
+            </span>
+          </div>
         </div>
         <div className="toolbar-right">
           <div className="users-list">
@@ -189,7 +202,8 @@ export default function App() {
     return (
       <div className="username-modal">
         <div className="username-modal-content">
-          <h2>Enter your name</h2>
+          <h2>What should we call you?</h2>
+          <p>Pick a display name for the room</p>
           <input
             autoFocus
             placeholder="Your name"
